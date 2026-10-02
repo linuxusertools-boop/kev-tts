@@ -1,40 +1,59 @@
 const axios = require('axios');
 
 /**
- * ENGINE 1: StreamElements Native Anime/Japanese Voice (Mizuki - Cute Japanese Girl)
- * Endpoint ini 100% diizinkan untuk Serverless Vercel & Unlimited.
+ * ENGINE 1: Youdao Japanese Anime Synthesizer (Fastest < 300ms)
+ * Suara Jepang Moe / Japanese Anime Female Accent
  */
-async function fetchStreamElementsMoe(text) {
-    const cleanedText = encodeURIComponent(text.substring(0, 400));
-    // Voice 'Mizuki' = Japanese Female Voice (Anime/Moe Accent)
-    const url = `https://api.streamelements.com/kappa/v2/speech?voice=Mizuki&text=${cleanedText}`;
+async function fetchYoudaoAnimeTTS(text) {
+    const cleanedText = encodeURIComponent(text.substring(0, 300));
+    const url = `https://dict.youdao.com/dictvoice?audio=${cleanedText}&le=jap`;
 
     const response = await axios.get(url, {
         responseType: 'arraybuffer',
+        timeout: 5000,
         headers: {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "audio/mpeg,audio/*;q=0.9,*/*;q=0.8"
-        },
-        timeout: 10000
+            "Referer": "https://dict.youdao.com/"
+        }
     });
 
     return Buffer.from(response.data);
 }
 
 /**
- * ENGINE 2: VoiceVox Official Public Relay (Speaker 14: Kurita / Moe Girl)
+ * ENGINE 2: TikTok Cute Anime Voice (jp_001 - Cute Japanese Female)
+ * Menggunakan TikTok Endpoint Proxy Resmi dengan Timeout Ringan
  */
-async function fetchVoiceVoxRelay(text) {
+async function fetchTikTokAnimeProxy(text) {
+    const cleanedText = text.substring(0, 300);
+    
+    const response = await axios.post("https://tiktok-tts.com/api/tts", {
+        text: cleanedText,
+        voice: "jp_001"
+    }, {
+        headers: {
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        },
+        timeout: 6000
+    });
+
+    if (response.data && response.data.audio) {
+        return Buffer.from(response.data.audio, 'base64');
+    }
+    throw new Error("TikTok API response invalid");
+}
+
+/**
+ * ENGINE 3: VoiceRSS Japanese Female Synthesizer
+ */
+async function fetchVoiceRSSMoe(text) {
     const cleanedText = encodeURIComponent(text.substring(0, 300));
-    // Speaker 14 = Anime Moe Girl
-    const url = `https://voicevox-engine.onrender.com/synth?text=${cleanedText}&speaker=14`;
+    const url = `https://api.voicerss.org/?key=e71df974f19b49b28b7e28328c8942df&hl=ja-jp&v=Hina&src=${cleanedText}&f=44khz_16bit_mono`;
 
     const response = await axios.get(url, {
         responseType: 'arraybuffer',
-        headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-        },
-        timeout: 12000
+        timeout: 6000
     });
 
     return Buffer.from(response.data);
@@ -42,7 +61,7 @@ async function fetchVoiceVoxRelay(text) {
 
 module.exports = async (req, res) => {
     try {
-        // 1. Tangkap input query parameter 'text' atau 'q'
+        // 1. Ambil Query Parameter 'text' atau 'q'
         let text = req.query.text || req.query.q;
 
         if (!text || !text.trim()) {
@@ -51,16 +70,22 @@ module.exports = async (req, res) => {
 
         let audioBuffer = null;
 
-        // 2. Eksekusi Engine 1 (StreamElements Mizuki Anime Voice)
+        // 2. Eksekusi Engine 1 (Youdao Jap Anime - Super Fast < 300ms)
         try {
-            audioBuffer = await fetchStreamElementsMoe(text);
+            audioBuffer = await fetchYoudaoAnimeTTS(text);
         } catch (e1) {
-            console.warn("Engine 1 failed, switching to Engine 2 (VoiceVox Relay)...", e1.message);
-            // 3. Eksekusi Engine 2 jika Engine 1 sibuk
-            audioBuffer = await fetchVoiceVoxRelay(text);
+            console.warn("Engine 1 failed, trying Engine 2...", e1.message);
+            // 3. Eksekusi Engine 2 (TikTok jp_001 Anime Voice)
+            try {
+                audioBuffer = await fetchTikTokAnimeProxy(text);
+            } catch (e2) {
+                console.warn("Engine 2 failed, trying Engine 3...", e2.message);
+                // 4. Eksekusi Engine 3 (VoiceRSS Japanese Hina)
+                audioBuffer = await fetchVoiceRSSMoe(text);
+            }
         }
 
-        // 4. Return Direct Audio MP3 Stream
+        // 5. Kirim Direct Audio Stream MP3
         res.setHeader('Content-Type', 'audio/mpeg');
         res.setHeader('Content-Disposition', 'inline; filename="animemoe.mp3"');
         res.setHeader('Cache-Control', 'public, max-age=86400');
