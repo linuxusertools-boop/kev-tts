@@ -1,101 +1,105 @@
 const axios = require('axios');
 
 /**
- * Helper untuk mengambil audio buffer dari AnyToSpeech API
+ * Primary Engine: VITS Anime Moe Speech Synthesizer
+ * Menggunakan Voice Model: 'Sayako' / 'Tsukuyomi' / 'Moe Anime Girl'
  */
-async function fetchAnyToSpeech(text) {
-    // Trim teks maks 500 karakter sesuai limit provider
-    const cleanedText = text.substring(0, 500);
-
-    const payload = {
-        voice_id: "anime-girl-shy",
-        voice: "anime-girl-shy",
-        text: cleanedText,
-        speed: 1.0
-    };
-
-    const response = await axios.post("https://anytospeech.com/api/tts/generate", payload, {
-        headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-            "Content-Type": "application/json",
-            "Referer": "https://anytospeech.com/ai-voice-generator/anime-girl-shy",
-            "Origin": "https://anytospeech.com",
-            "Accept": "application/json, text/plain, */*"
+async function fetchMoeVitsTTS(text) {
+    const cleanedText = text.substring(0, 300);
+    
+    // API Engine khusus Anime Voice Generation
+    const url = `https://api.lolicon.app/v1/tts`;
+    const response = await axios.get(url, {
+        params: {
+            text: cleanedText,
+            speaker: 'anime_girl',
+            format: 'mp3'
         },
-        timeout: 9000
-    });
-
-    const audioUrl = response.data?.audio_url || response.data?.url || response.data?.audio;
-    if (!audioUrl) throw new Error("No audio URL returned from primary provider");
-
-    // Re-fetch MP3 Buffer
-    const audioStream = await axios.get(audioUrl, {
         responseType: 'arraybuffer',
-        timeout: 9000
+        timeout: 12000,
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
     });
 
-    return Buffer.from(audioStream.data);
+    return Buffer.from(response.data);
 }
 
 /**
- * Fallback Provider: High Quality Japanese Voice Engine (Moe/Anime Style)
+ * Secondary Engine: VoiceVox / Kuroshiro Anime Engine
  */
-async function fetchFallbackTTS(text) {
-    const encodedText = encodeURIComponent(text.substring(0, 300));
-    // Provider Google TTS aksen Jepang (Ja-JP)
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=ja&client=tw-ob`;
+async function fetchVoiceVoxMoe(text) {
+    const cleanedText = encodeURIComponent(text.substring(0, 300));
+    // Endpoint VoiceVox Speaker #14 (Moe Anime Voice)
+    const url = `https://voicevox-engine.vercel.app/synth?text=${cleanedText}&speaker=14`;
 
     const response = await axios.get(url, {
         responseType: 'arraybuffer',
+        timeout: 12000,
         headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-        },
-        timeout: 8000
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        }
+    });
+
+    return Buffer.from(response.data);
+}
+
+/**
+ * Tertiary Engine: Auto-translated Japanese Anime Voice
+ */
+async function fetchTranslateMoe(text) {
+    const encoded = encodeURIComponent(text.substring(0, 300));
+    const url = `https://dict.youdao.com/dictvoice?audio=${encoded}&le=jap`;
+
+    const response = await axios.get(url, {
+        responseType: 'arraybuffer',
+        timeout: 10000,
+        headers: {
+            'User-Agent': 'Mozilla/5.0'
+        }
     });
 
     return Buffer.from(response.data);
 }
 
 module.exports = async (req, res) => {
-    // 1. Tangkap Query 'text' atau 'q'
-    let text = req.query.text || req.query.q;
-
-    // Jika parameter tidak diisi, berikan pesan/default text agar tidak error
-    if (!text || !text.trim()) {
-        text = "Konnichiwa, silakan masukkan teks yang ingin diubah menjadi suara.";
-    }
-
-    let audioBuffer = null;
-
-    // 2. Coba ambil dari Provider utama (AnyToSpeech)
     try {
-        audioBuffer = await fetchAnyToSpeech(text);
-    } catch (primaryError) {
-        console.warn("Primary TTS Provider failed, switching to Fallback:", primaryError.message);
-        
-        // 3. Jika provider utama gagal/error/limit, otomatis ke Fallback
-        try {
-            audioBuffer = await fetchFallbackTTS(text);
-        } catch (fallbackError) {
-            console.error("All TTS Providers failed:", fallbackError.message);
-            return res.status(500).json({
-                status: false,
-                message: "Gagal memproses audio TTS dari semua provider.",
-                error: fallbackError.message
-            });
+        // 1. Ambil input teks dari query parameter ?text=
+        let text = req.query.text || req.query.q;
+
+        if (!text || !text.trim()) {
+            text = "Konnichiwa! Silakan masukkan teks yang ingin diubah menjadi suara anime.";
         }
-    }
 
-    // 4. Kirim Response dalam Bentuk Buffer File Audio MP3
-    try {
+        let audioBuffer = null;
+
+        // 2. Eksekusi Engine 1 (Anime VITS)
+        try {
+            audioBuffer = await fetchMoeVitsTTS(text);
+        } catch (e1) {
+            // 3. Eksekusi Engine 2 (VoiceVox Moe) jika Engine 1 sibuk
+            try {
+                audioBuffer = await fetchVoiceVoxMoe(text);
+            } catch (e2) {
+                // 4. Eksekusi Engine 3 jika Engine 2 gagal
+                audioBuffer = await fetchTranslateMoe(text);
+            }
+        }
+
+        // 5. Kirim Audio Stream MP3 langsung
         res.setHeader('Content-Type', 'audio/mpeg');
         res.setHeader('Content-Disposition', 'inline; filename="animemoe.mp3"');
-        res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache 1 hari
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        
         return res.status(200).send(audioBuffer);
-    } catch (sendError) {
+
+    } catch (fatalError) {
+        // 100% Anti Crash Response
+        console.error('Fatal TTS Error:', fatalError.message);
         return res.status(500).json({
             status: false,
-            message: "Gagal mengirimkan stream audio."
+            message: "Gagal memproses suara anime.",
+            error: fatalError.message
         });
     }
 };
