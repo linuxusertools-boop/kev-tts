@@ -1,6 +1,8 @@
 {
   "version": 2,
-  "regions": ["iad1"],
+  "regions": [
+    "iad1"
+  ],
   "functions": {
     "api/*.js": {
       "maxDuration": 60,
@@ -8,19 +10,63 @@
     }
   },
   "rewrites": [
-    { "source": "/animemoe", "destination": "/api/animemoe" },
-    { "source": "/tts", "destination": "/api/tts" },
-    { "source": "/status", "destination": "/api/status" },
-    { "source": "/health", "destination": "/api/health" },
-    { "source": "/warm", "destination": "/api/warm" }
+    {
+      "source": "/",
+      "destination": "/home.html"
+    },
+    {
+      "source": "/home",
+      "destination": "/home.html"
+    },
+    {
+      "source": "/docs",
+      "destination": "/docs.html"
+    },
+    {
+      "source": "/voices",
+      "destination": "/api/voices"
+    },
+    {
+      "source": "/animemoe",
+      "destination": "/api/animemoe"
+    },
+    {
+      "source": "/tts",
+      "destination": "/api/tts"
+    },
+    {
+      "source": "/status",
+      "destination": "/api/status"
+    },
+    {
+      "source": "/health",
+      "destination": "/api/health"
+    },
+    {
+      "source": "/warm",
+      "destination": "/api/warm"
+    },
+    {
+      "source": "/:voice([a-zA-Z0-9_-]+)",
+      "destination": "/api/tts?voice=:voice"
+    }
   ],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, HEAD, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, HEAD, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type"
+        }
       ]
     }
   ]

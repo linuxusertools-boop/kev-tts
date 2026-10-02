@@ -1,0 +1,82 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>kev-tts · Docs</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E7C7B'/%3E%3Cpath d='M6 16h2m4-6v12m4-9v6m4-10v14m4-9v4' stroke='%23fff' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E"><style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mut:#5b6573;--bd:#e2e6ec;--ac:#0e7c7b;--ac2:#fff;--code:#eef1f5}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b22;--tx:#e8ecf2;--mut:#98a2b3;--bd:#262c36;--ac:#2cc4c2;--ac2:#06201f;--code:#1e242d}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.6 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.w{max-width:860px;margin:0 auto;padding:20px 16px 60px}
+nav{display:flex;gap:6px;align-items:center;padding:14px 0;flex-wrap:wrap}
+nav b{margin-right:auto;font-size:18px}nav a{color:var(--mut);text-decoration:none;padding:6px 12px;border-radius:8px}
+nav a:hover,nav a.on{background:var(--card);color:var(--tx);border:0}
+h1{font-size:26px;margin:.4em 0 .2em}h2{font-size:19px;margin:1.8em 0 .5em}p{margin:.5em 0}.mut{color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px;margin:14px 0}
+label{display:block;font-weight:600;margin:12px 0 5px;font-size:13px}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
+textarea{min-height:90px;resize:vertical}
+button,.btn{background:var(--ac);color:var(--ac2);border:0;border-radius:10px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block}
+button.g{background:var(--code);color:var(--tx)}button:disabled{opacity:.6;cursor:wait}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row>*{flex:1 1 180px}.row>button{flex:0 0 auto}
+code,pre{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:var(--code);border-radius:6px}
+code{padding:2px 6px;word-break:break-all}pre{padding:12px;overflow-x:auto;margin:8px 0}pre code{padding:0;background:none}
+.url{display:flex;gap:8px}.url input{font-family:ui-monospace,monospace;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--bd);vertical-align:top}
+.tbl{overflow-x:auto}.msg{margin-top:10px;font-size:13px}.err{color:#d6453d}.ok{color:var(--ac)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{background:var(--code);border:1px solid var(--bd);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--tx)}
+.chip.on{background:var(--ac);color:var(--ac2);border-color:var(--ac)}
+footer{margin-top:40px;text-align:center;color:var(--mut);font-size:13px}footer a{color:var(--ac);font-weight:600;text-decoration:none}
+</style></head><body><div class="w"><nav><b>kev-tts</b><a href="/home" class="">Home</a><a href="/docs" class="on">Docs</a><a href="/voices">Voices</a><a href="/status">Status</a></nav>
+<h1>Dokumentasi</h1>
+<p class="mut">API teks → suara. Tanpa token, tanpa API key, tanpa konfigurasi.</p>
+
+<h2>Endpoint</h2>
+<div class="card tbl"><table>
+<tr><th>Path</th><th>Fungsi</th></tr>
+<tr><td><code>/animemoe?text=Halo</code></td><td>Suara utama (<code>storage/sample.mp3</code>)</td></tr>
+<tr><td><code>/{suara}?text=Halo</code></td><td>Suara lain. Contoh <code>storage/kawai.mp3</code> → <code>/kawai?text=Halo</code></td></tr>
+<tr><td><code>/tts?voice=kawai&amp;text=Halo</code></td><td>Bentuk umum (juga <code>/api/tts</code>), GET atau POST JSON</td></tr>
+<tr><td><code>/voices</code></td><td>Daftar semua suara + URL masing-masing (JSON)</td></tr>
+<tr><td><code>/home</code></td><td>Coba langsung & salin URL</td></tr>
+<tr><td><code>/status</code></td><td>Diagnosa mesin & daftar suara</td></tr>
+<tr><td><code>/health</code></td><td>Cek hidup instan</td></tr>
+<tr><td><code>/warm</code></td><td>Pemanasan (untuk pinger)</td></tr>
+</table></div>
+
+<h2>Parameter</h2>
+<div class="card tbl"><table>
+<tr><th>Nama</th><th>Keterangan</th></tr>
+<tr><td><code>text</code></td><td>Teks yang diucapkan (maks 300 karakter, bisa diubah lewat <code>MAX_CHARS</code>)</td></tr>
+<tr><td><code>voice</code></td><td>Nama suara (hanya di <code>/tts</code>); kosong = utama</td></tr>
+<tr><td><code>fast=1</code></td><td>Mode kilat: ~1 detik, suara biasa (bukan clone)</td></tr>
+<tr><td><code>format=json</code></td><td>Balasan JSON berisi audio base64</td></tr>
+<tr><td><code>download=1</code></td><td>Paksa unduh file</td></tr>
+<tr><td><code>lang</code></td><td>Bahasa mode kilat/cadangan: <code>ja</code>, <code>en</code>, <code>ko</code>, <code>zh</code>, <code>fr</code></td></tr>
+<tr><td><code>fallback=0</code></td><td>Matikan suara cadangan (error jelas jika clone gagal)</td></tr>
+</table></div>
+
+<h2>Contoh</h2>
+<pre><code>curl "https://DOMAIN-KAMU/animemoe?text=Konnichiwa" -o suara.mp3
+curl "https://DOMAIN-KAMU/kawai?text=Halo&amp;fast=1" -o kawai.mp3
+curl "https://DOMAIN-KAMU/voices"</code></pre>
+<pre><code>const r = await fetch('/animemoe?text=' + encodeURIComponent('Halo'));
+new Audio(URL.createObjectURL(await r.blob())).play();</code></pre>
+
+<h2>Menambah suara</h2>
+<p>Taruh file audio di folder <code>storage/</code>. Nama file = nama endpoint. Format: mp3, wav, m4a, ogg, flac. Pakai suara bersih, satu orang, 5–15 detik. Deploy ulang, selesai — suara otomatis muncul di <code>/voices</code> dan <code>/home</code>.</p>
+<pre><code>storage/sample.mp3  → /animemoe  (utama)
+storage/kawai.mp3   → /kawai
+storage/tsundere.mp3 → /tsundere</code></pre>
+
+<h2>Pemasangan</h2>
+<div class="card"><ol>
+<li>Upload proyek ke GitHub, lalu import di Vercel (Framework: <b>Other</b>, tanpa build command).</li>
+<li>Tidak ada environment variable yang wajib. Tidak memakai HF token.</li>
+<li>Buka <code>/home</code> untuk mencoba, <code>/status</code> untuk memeriksa mesin.</li>
+<li>Agar respons pertama tetap cepat, pasang pinger gratis (cron-job.org / UptimeRobot) ke <code>/warm</code> tiap 5 menit.</li>
+</ol></div>
+
+<h2>Respons & header</h2>
+<p>Sukses: audio langsung. Header berguna: <code>X-TTS-Voice</code>, <code>X-TTS-Engine</code> (<code>voxcpm</code> atau cadangan), <code>X-TTS-Cache</code>, <code>X-TTS-Elapsed-Ms</code>. Teks yang sama dipakai ulang dari cache sehingga balasannya instan.</p>
+<p>Gagal: JSON <code>{status:false, code, message}</code>. Suara tak dikenal → 404 <code>VOICE_NOT_FOUND</code> beserta daftar suara yang ada.</p>
+
+<h2>Soal kecepatan & ketahanan</h2>
+<p>Suara clone dibuat di server model publik, jadi teks baru butuh beberapa detik; teks yang pernah diminta langsung instan dari cache. Untuk balasan sekitar satu detik gunakan <code>fast=1</code>. Bila model sibuk atau down, sistem otomatis mencoba ulang, memakai hasil tersimpan, atau suara cadangan, sehingga selalu ada jawaban.</p>
+<footer>powered by <a href="https://github.com/kevsoft-studio" target="_blank" rel="noopener">kevsoft-studio</a></footer></div></body></html>

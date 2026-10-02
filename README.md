@@ -6,6 +6,10 @@ API teks → suara dengan voice clone, men-scrape Space Hugging Face
 ## Pakai
 
 ```
+GET  /animemoe?text=Halo                 → suara utama (storage/sample.mp3)
+GET  /kawai?text=Halo                    → storage/kawai.mp3 (nama file = nama endpoint)
+GET  /voices                             → daftar semua suara
+GET  /home   /docs                       → coba langsung / dokumentasi
 GET  /api/tts?text=Halo dunia            → audio
 POST /api/tts  {"text":"Halo dunia"}     → audio
 GET  /api/tts?text=Halo&format=json      → JSON + data URI base64
@@ -22,7 +26,7 @@ Parameter lengkap ada di halaman utama.
 
 1. Push folder ini ke GitHub → import di Vercel (Framework: Other). Tidak perlu build command.
 2. Buka `/api/status` setelah deploy. `ok: true` berarti Space terjangkau dan sample terbaca.
-3. (Disarankan) isi `HF_TOKEN` di Environment Variables supaya kuota GPU tidak cepat habis.
+3. Tidak memakai HF token sama sekali; tidak ada env var wajib.
 
 ## Sample suara
 
@@ -45,7 +49,7 @@ Batas jujur: generate suara clone di GPU Space tetap butuh beberapa detik untuk 
 ## Anti-error
 
 - Skema Space dibaca langsung saat runtime, jadi tahan terhadap perubahan versi Gradio/VoxCPM.
-- Retry + backoff (429/5xx/timeout), menunggu Space yang tidur, rotasi `HF_TOKENS`, Space cadangan lewat `VOXCPM_SPACES`.
+- Retry + backoff (429/5xx/timeout), menunggu Space yang tidur, Space cadangan lewat `VOXCPM_SPACES`.
 - Sample basi setelah Space restart terdeteksi dan di-upload ulang otomatis.
 - Circuit breaker 30 detik setelah kena kuota/rate limit: request berikutnya langsung beralih, tidak menunggu sia-sia.
 - Urutan cadangan saat VoxCPM gagal: (1) hasil clone tersimpan untuk teks yang sama, (2) suara Youdao (bukan clone), (3) JSON error yang jelas. Semuanya ditandai di header `X-TTS-*`.
