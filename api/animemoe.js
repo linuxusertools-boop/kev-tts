@@ -1,26 +1,40 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const FormData = require('form-data');
 
 /**
- * Helper: Mengubah file lokal menjadi Data URI (Base64) untuk Gradio
+ * Helper: Upload file audio lokal ke Gradio Server (/upload)
+ * Mengembalikan metadata file objek yang valid untuk Gradio v4
  */
-function fileToDataURI(filePath) {
+async function uploadSampleToGradio(filePath, spaceUrl) {
     if (!fs.existsSync(filePath)) {
         throw new Error(`File sample audio tidak ditemukan di: ${filePath}`);
     }
-    const fileBuffer = fs.readFileSync(filePath);
-    const base64Data = fileBuffer.toString('base64');
-    
-    // Deteksi mime-type sederhana
-    const ext = path.extname(filePath).toLowerCase();
-    let mimeType = 'audio/mpeg';
-    if (ext === '.wav') mimeType = 'audio/wav';
-    if (ext === '.ogg') mimeType = 'audio/ogg';
 
+    const form = new FormData();
+    form.append('files', fs.createReadStream(filePath));
+
+    const uploadRes = await axios.post(`${spaceUrl}/upload`, form, {
+        headers: {
+            ...form.getHeaders()
+        },
+        timeout: 15000
+    });
+
+    if (!uploadRes.data || !uploadRes.data[0]) {
+        throw new Error("Gagal mengunggah file sample ke Hugging Face Space");
+    }
+
+    // Mengembalikan objek file Gradio resmi
+    const uploadedFile = uploadRes.data[0];
     return {
-        data: `data:${mimeType};base64,${base64Data}`,
-        name: path.basename(filePath)
+        path: uploadedFile,
+        url: `${spaceUrl}/file=${uploadedFile}`,
+        orig_name: path.basename(filePath),
+        size: fs.statSync(filePath).size,
+        mime_type: "audio/mpeg",
+        is_stream: false
     };
 }
 
@@ -31,19 +45,15 @@ async function fetchVoxCPM(text, samplePath = '/storage/sample.mp3') {
     const spaceUrl = "https://openbmb-voxcpm-demo.hf.space";
     const cleanedText = text.substring(0, 300);
 
-    // 1. Ambil file audio sample dan ubah ke format Data URI / Gradio File Object
-    const sampleAudio = fileToDataURI(samplePath);
+    // 1. Upload file sample.mp3 ke Gradio /upload terlebih dahulu
+    const gradioFileObj = await uploadSampleToGradio(samplePath, spaceUrl);
 
-    // 2. Submit job ke /call/predict dengan membawa sample audio di parameter index 1
+    // 2. Submit job ke /call/predict menggunakan metadata file hasil upload
     const initRes = await axios.post(`${spaceUrl}/call/predict`, {
         data: [
-            cleanedText,                   // [0] Text input
-            {                              // [1] Prompt Audio File (Sample Voice)
-                data: sampleAudio.data,
-                name: sampleAudio.name,
-                is_file: true
-            },
-            ""                             // [2] Prompt Text (opsional, kosongkan jika tidak ada transcript sample)
+            cleanedText,    // [0] Text input
+            gradioFileObj,  // [1] Prompt Audio File Object dari /upload
+            ""              // [2] Prompt Text
         ]
     }, {
         headers: { "Content-Type": "application/json" },
@@ -53,10 +63,10 @@ async function fetchVoxCPM(text, samplePath = '/storage/sample.mp3') {
     const eventId = initRes.data?.event_id;
     if (!eventId) throw new Error("Gagal mendapatkan Event ID dari VoxCPM");
 
-    // 3. Stream SSE Listener untuk mengambil URL Audio Hasil Synthesize
+    // 3. Stream SSE Listener untuk mengambil URL Audio
     const streamRes = await axios.get(`${spaceUrl}/call/predict/${eventId}`, {
         responseType: 'text',
-        timeout: 20000
+        timeout: 25000
     });
 
     let audioUrl = null;
@@ -71,14 +81,14 @@ async function fetchVoxCPM(text, samplePath = '/storage/sample.mp3') {
                     break;
                 }
             } catch (e) {
-                // Ignore non-JSON lines inside SSE stream
+                // Ignore non-JSON lines
             }
         }
     }
 
-    if (!audioUrl) throw new Error("URL audio tidak ditemukan dalam SSE response VoxCPM");
+    if (!audioUrl) throw new Error("URL audio tidak ditemukan dalam response VoxCPM");
 
-    // 4. Download WAV/MP3 Binary Buffer Hasil Cloning
+    // 4. Download Binary Audio Buffer
     const audioStream = await axios.get(audioUrl, {
         responseType: 'arraybuffer',
         timeout: 10000
@@ -135,20 +145,20 @@ module.exports = async (req, res) => {
             text = "Konnichiwa! Silakan masukkan teks yang ingin diubah menjadi suara.";
         }
 
-        // Lokasi file sample audio referensi yang akan ditiru
-        const SAMPLE_AUDIO_PATH = '/storage/sample.mp3';
+        // Jalur file sample lokal
+        const SAMPLE_AUDIO_PATH = path.join(process.cwd(), 'storage', 'sample.mp3');
 
         let audioBuffer = null;
 
-        // Multilevel Fallback Execution
+        // Executing Multi-level Fallback
         try {
             audioBuffer = await fetchVoxCPM(text, SAMPLE_AUDIO_PATH);
         } catch (e1) {
-            console.warn("Engine 1 (VoxCPM Cloning) failed, fallback to Engine 2...", e1.message);
+            console.warn("Engine 1 (VoxCPM Cloning) failed, falling back to Engine 2...", e1.message);
             try {
                 audioBuffer = await fetchTikTokAnimeProxy(text);
             } catch (e2) {
-                console.warn("Engine 2 (TikTok) failed, fallback to Engine 3...", e2.message);
+                console.warn("Engine 2 (TikTok) failed, falling back to Engine 3...", e2.message);
                 audioBuffer = await fetchYoudaoAnimeTTS(text);
             }
         }
