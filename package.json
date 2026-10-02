@@ -1,8 +1,9 @@
 {
   "name": "kev-tts",
-  "version": "1.0.0",
-  "main": "api/animemoe.js",
-  "dependencies": {
-    "axios": "^1.6.8"
-  }
+  "version": "2.0.0",
+  "private": true,
+  "description": "API endpoint TTS + voice clone dari VoxCPM (Hugging Face Space), siap deploy ke Vercel",
+  "main": "api/tts.js",
+  "engines": { "node": ">=18" },
+  "scripts": { "test": "node test/mock.test.js && node test/http.test.js" }
 }
