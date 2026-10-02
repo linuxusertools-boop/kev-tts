@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "regions": ["iad1"],
   "functions": {
     "api/*.js": {
       "maxDuration": 60,
@@ -9,7 +10,9 @@
   "rewrites": [
     { "source": "/animemoe", "destination": "/api/animemoe" },
     { "source": "/tts", "destination": "/api/tts" },
-    { "source": "/status", "destination": "/api/status" }
+    { "source": "/status", "destination": "/api/status" },
+    { "source": "/health", "destination": "/api/health" },
+    { "source": "/warm", "destination": "/api/warm" }
   ],
   "headers": [
     {

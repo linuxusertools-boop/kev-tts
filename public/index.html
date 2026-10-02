@@ -125,6 +125,7 @@ td code,p code,li code{background:#DDE3EA;padding:1px 5px;border-radius:3px}
       <input id="prompt" type="text" placeholder="Kosongkan bila tidak tahu isi sample">
 
       <div class="checks" style="margin-top:16px">
+        <label><input type="checkbox" id="fast"> mode cepat (suara biasa, tanpa clone)</label>
         <label><input type="checkbox" id="clone" checked> clone suara sample</label>
         <label><input type="checkbox" id="fallback" checked> suara cadangan bila gagal</label>
         <label><input type="checkbox" id="nocache"> lewati cache</label>
@@ -160,6 +161,8 @@ td code,p code,li code{background:#DDE3EA;padding:1px 5px;border-radius:3px}
         <tr><th><code>prompt_text</code></th><td>Transkrip isi sample. Bila diisi, kualitas clone naik.</td></tr>
         <tr><th><code>control</code></th><td>Instruksi gaya suara, bila model mendukung.</td></tr>
         <tr><th><code>cfg</code>, <code>steps</code></th><td>Pengaturan generate. Kosong = bawaan Space.</td></tr>
+        <tr><th><code>fast</code></th><td><code>1</code> langsung memakai suara biasa (tanpa clone), respons sekitar sedetik.</td></tr>
+        <tr><th><code>timeout</code></th><td>Batas tunggu VoxCPM dalam detik (5–50), setelahnya beralih ke suara cadangan.</td></tr>
         <tr><th><code>clone</code></th><td><code>0</code> untuk tidak memakai sample.</td></tr>
         <tr><th><code>fallback</code></th><td><code>0</code> mematikan suara cadangan.</td></tr>
         <tr><th><code>format</code></th><td><code>audio</code> (bawaan) atau <code>json</code> berisi data URI base64.</td></tr>
@@ -169,13 +172,13 @@ td code,p code,li code{background:#DDE3EA;padding:1px 5px;border-radius:3px}
     <div>
       <h3>Respons dan error</h3>
       <ul>
-        <li><b>200</b> berisi audio. Header <code>X-TTS-Engine</code> menunjukkan <code>voxcpm</code> atau <code>youdao-fallback</code> (bukan hasil clone).</li>
+        <li><b>200</b> berisi audio. <code>X-TTS-Engine</code>: <code>voxcpm</code> (clone), <code>youdao</code> (mode cepat) atau <code>youdao-fallback</code> (cadangan saat gagal). <code>X-TTS-Cache</code>: <code>miss</code>, <code>memory</code>, <code>stale</code>.</li>
         <li><b>429</b> kuota GPU atau rate limit Space habis. Tambahkan <code>HF_TOKEN</code> di Vercel.</li>
         <li><b>503</b> Space sedang tidur atau bangun. Ulangi beberapa detik lagi.</li>
         <li><b>500</b> <code>SAMPLE_MISSING</code>: file di <code>storage/</code> tidak ikut ter-deploy.</li>
         <li>Semua error berbentuk JSON: <code>status</code>, <code>code</code>, <code>message</code>, <code>attempts</code>.</li>
       </ul>
-      <p class="note">Endpoint: <code>/api/tts</code>, <code>/tts</code>, <code>/animemoe</code> (lama), <code>/api/status</code> untuk diagnosa.</p>
+      <p class="note">Endpoint: <code>/api/tts</code>, <code>/tts</code>, <code>/animemoe</code> (lama), <code>/api/status</code> diagnosa, <code>/api/health</code> cek hidup instan, <code>/api/warm</code> pemanasan.</p>
     </div>
     <div>
       <h3>Environment variable (opsional)</h3>
@@ -184,6 +187,7 @@ td code,p code,li code{background:#DDE3EA;padding:1px 5px;border-radius:3px}
         <tr><th><code>VOXCPM_SPACES</code></th><td>Daftar URL Space cadangan, dipisah koma.</td></tr>
         <tr><th><code>SAMPLE_PATH</code></th><td>Nama atau path file sample lain.</td></tr>
         <tr><th><code>SAMPLE_TRANSCRIPT</code></th><td>Transkrip sample sebagai <code>prompt_text</code> bawaan.</td></tr>
+        <tr><th><code>BUDGET_MS</code></th><td>Batas tunggu VoxCPM default dalam ms (bawaan 45000).</td></tr>
         <tr><th><code>MAX_CHARS</code></th><td>Batas karakter teks (20–1000).</td></tr>
         <tr><th><code>VOXCPM_API_NAME</code></th><td>Paksa nama endpoint Gradio, mis. <code>/generate</code>.</td></tr>
       </table>
@@ -197,7 +201,7 @@ td code,p code,li code{background:#DDE3EA;padding:1px 5px;border-radius:3px}
   const ENDPOINT = '/api/tts';
   let method = 'GET', objUrl = null, peaks = null, duration = 0;
 
-  const els = ['text','cfg','steps','format','prompt','clone','fallback','nocache'].reduce((a, k) => (a[k] = $(k), a), {});
+  const els = ['text','cfg','steps','format','prompt','fast','clone','fallback','nocache'].reduce((a, k) => (a[k] = $(k), a), {});
 
   function params() {
     const p = { text: els.text.value.trim() };
@@ -205,6 +209,7 @@ td code,p code,li code{background:#DDE3EA;padding:1px 5px;border-radius:3px}
     if (els.cfg.value) p.cfg = els.cfg.value;
     if (els.steps.value) p.steps = els.steps.value;
     if (els.format.value !== 'audio') p.format = els.format.value;
+    if (els.fast.checked) p.fast = '1';
     if (!els.clone.checked) p.clone = '0';
     if (!els.fallback.checked) p.fallback = '0';
     if (els.nocache.checked) p.nocache = '1';
@@ -331,8 +336,11 @@ td code,p code,li code{background:#DDE3EA;padding:1px 5px;border-radius:3px}
       }
       const eng = res.headers.get('x-tts-engine') || (info && info.engine) || '-';
       const fb = eng !== 'voxcpm';
-      setLine(fb ? (res.headers.get('x-tts-note') || 'Memakai suara cadangan, bukan hasil clone.') : 'Selesai. Suara dibuat oleh VoxCPM.', fb ? 'warn' : '');
+      const note = res.headers.get('x-tts-note');
+      setLine(eng === 'youdao' ? 'Mode cepat: suara biasa, bukan hasil clone.' : fb ? (note || 'Memakai suara cadangan, bukan hasil clone.') : cache === 'stale' ? (note || 'Memakai hasil clone tersimpan.') : 'Selesai. Suara dibuat oleh VoxCPM.', (fb && eng !== 'youdao') || cache === 'stale' ? 'warn' : '');
+      const cache = res.headers.get('x-tts-cache') || (info && info.cache);
       const bits = [`HTTP ${res.status}`, `${ms} ms`, `engine ${eng}`];
+      if (cache && cache !== 'none') bits.push(`cache ${cache}`);
       if (blob) bits.push(`${(blob.size / 1024).toFixed(0)} KB`);
       if (duration && blob) bits.push(`${duration.toFixed(1)} dtk`);
       if (res.headers.get('x-tts-truncated')) bits.push(`teks dipotong di ${res.headers.get('x-tts-truncated')} karakter`);

@@ -5,5 +5,5 @@
   "description": "API endpoint TTS + voice clone dari VoxCPM (Hugging Face Space), siap deploy ke Vercel",
   "main": "api/tts.js",
   "engines": { "node": ">=18" },
-  "scripts": { "test": "node test/mock.test.js && node test/http.test.js" }
+  "scripts": { "test": "node test/mock.test.js && node test/http.test.js && node test/speed.test.js" }
 }
