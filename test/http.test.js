@@ -20,7 +20,7 @@ const gradio = http.createServer((req, res) => {
 
 gradio.listen(0, '127.0.0.1', async () => {
   process.env.VOXCPM_SPACES = `http://127.0.0.1:${gradio.address().port}`;
-  const routes = { '/api/tts': require('../api/tts'), '/api/animemoe': require('../api/animemoe'), '/api/status': require('../api/status') };
+  const routes = { '/api/tts': require('../api/tts'), '/api/animemoe': require('../api/animemoe'), '/api/status': require('../api/status'), '/api/voices': require('../api/voices') };
   const rewrite = Object.fromEntries(vercel.rewrites.map((r) => [r.source, r.destination]));
 
   const app = http.createServer(async (req, res) => {
@@ -28,15 +28,16 @@ gradio.listen(0, '127.0.0.1', async () => {
     res.status = (c) => { res.statusCode = c; return res; };
     res.json = (o) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(o)); return res; };
     res.send = (b) => { res.end(b); return res; };
+    if (!rewrite[u.pathname] && /^\/[a-zA-Z0-9_-]+$/.test(u.pathname) && !routes[p]) { req.query = { ...Object.fromEntries(u.searchParams), voice: u.pathname.slice(1) }; return routes['/api/tts'](req, res); }
     if (routes[p]) { req.query = Object.fromEntries(u.searchParams); return routes[p](req, res); }
-    if (p === '/') { res.setHeader('Content-Type', 'text/html'); return res.end(fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'))); }
+    if (p === '/home.html') { res.setHeader('Content-Type', 'text/html'); return res.end(fs.readFileSync(path.join(__dirname, '..', 'public', 'home.html'))); }
     res.statusCode = 404; res.end('nf');
   });
   app.listen(0, async () => {
     const base = `http://127.0.0.1:${app.address().port}`;
     try {
-      let r = await fetch(`${base}/`); assert.strictEqual(r.status, 200); assert.match(await r.text(), /Try it out/);
-      console.log('✓ GET /  → halaman utama + "Try it out"');
+      let r = await fetch(`${base}/`); assert.strictEqual(r.status, 200); assert.match(await r.text(), /Putar suara/);
+      console.log('✓ GET /  → halaman utama + "Putar suara"');
       for (const route of ['/animemoe', '/tts', '/api/tts']) {
         r = await fetch(`${base}${route}?text=halo`); const b = Buffer.from(await r.arrayBuffer());
         assert.strictEqual(r.status, 200, route); assert.strictEqual(r.headers.get('content-type'), 'audio/wav'); assert.strictEqual(b.subarray(0, 4).toString(), 'RIFF');
@@ -45,8 +46,17 @@ gradio.listen(0, '127.0.0.1', async () => {
         console.log(`✓ GET ${route}?text=halo → ${b.length} byte WAV, engine=${r.headers.get('x-tts-engine')}`);
       }
       r = await fetch(`${base}/status`); const s = await r.json();
-      assert.strictEqual(s.ok, true); assert.ok(s.sample.length >= 1); assert.strictEqual(s.spaces[0].selected_endpoint, '/tts');
-      console.log('✓ /status → ok, sample terdeteksi:', s.sample.map((x) => `${x.name} (${x.bytes} B)`).join(', '));
+      assert.strictEqual(s.ok, true); assert.ok(s.voices.length >= 1); assert.strictEqual(s.spaces[0].selected_endpoint, '/tts');
+      console.log('✓ /status → ok, sample terdeteksi:', s.voices.map((x) => `${x.id} (${x.bytes} B)`).join(', '));
+      r = await fetch(`${base}/voices`); const vj = await r.json();
+      assert.strictEqual(vj.default, 'sample'); assert.ok(vj.voices.some((x) => x.endpoint.endsWith('/animemoe?text=')));
+      console.log('✓ /voices →', vj.voices.map((x) => x.id).join(', '));
+      r = await fetch(`${base}/tts?voice=sample&text=halo`); assert.strictEqual(r.status, 200); assert.strictEqual(r.headers.get('x-tts-voice'), 'sample');
+      r = await fetch(`${base}/kawai?text=halo`); assert.strictEqual(r.status, 200); assert.strictEqual(r.headers.get('x-tts-voice'), 'kawai');
+      console.log('✓ /kawai?text= → suara kawai');
+      r = await fetch(`${base}/tts?voice=tidakada&text=halo`); const nf = await r.json();
+      assert.strictEqual(r.status, 404); assert.strictEqual(nf.code, 'VOICE_NOT_FOUND'); assert.ok(nf.available.includes('sample'));
+      console.log('✓ voice tak dikenal → 404 + daftar suara');
       console.log('\nTES HTTP LULUS');
     } catch (e) { console.error('✗', e); process.exitCode = 1; }
     app.close(); gradio.close();
