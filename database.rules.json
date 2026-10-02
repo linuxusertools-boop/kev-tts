@@ -1,0 +1,15 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "tts_cache": {
+      "$voice": {
+        "$hash": {
+          ".read": true,
+          ".write": true,
+          ".validate": "newData.hasChildren(['b','m']) && newData.child('b').isString() && newData.child('b').val().length < 8000000"
+        }
+      }
+    }
+  }
+}

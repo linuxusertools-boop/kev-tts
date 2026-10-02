@@ -1,4 +1,5 @@
 'use strict';
+process.env.FIREBASE_DB_URL = 'off';
 // Uji logika end-to-end terhadap MOCK server Gradio (bukan Space asli).
 const http = require('http');
 const assert = require('assert');
@@ -112,7 +113,7 @@ async function run(mode, query = {}, envx = {}) {
   let { res, state } = await run('ok', { text: 'Halo dunia', steps: '8' }, { SAMPLE_TRANSCRIPT: '' });
   assert.strictEqual(res.code, 200, JSON.stringify(res.body));
   assert.strictEqual(res.headers['content-type'], 'audio/wav');
-  assert.strictEqual(res.headers['x-tts-engine'], 'voxcpm');
+  assert.strictEqual(res.headers['x-tts-engine'], 'kev-tts');
   assert.strictEqual(res.headers['x-tts-cloned'], 'true');
   assert.ok(Buffer.isBuffer(res.body) && res.body.length > 1000);
   const d = state.lastData;

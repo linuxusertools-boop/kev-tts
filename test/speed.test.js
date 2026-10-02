@@ -1,4 +1,5 @@
 'use strict';
+process.env.FIREBASE_DB_URL = 'off';
 // Uji kecepatan & ketahanan pada SATU instance modul (cache/cooldown bertahan, seperti fungsi Vercel yang hangat).
 const http = require('http'), assert = require('assert');
 
@@ -45,7 +46,7 @@ gradio.listen(0, '127.0.0.1', async () => {
   handler = require('../lib/handler');
   try {
     let r = await call({ text: 'satu' });
-    assert.strictEqual(r.code, 200); assert.strictEqual(r.headers['x-tts-engine'], 'voxcpm'); assert.strictEqual(r.headers['x-tts-cache'], 'miss');
+    assert.strictEqual(r.code, 200); assert.strictEqual(r.headers['x-tts-engine'], 'kev-tts'); assert.strictEqual(r.headers['x-tts-cache'], 'miss');
     console.log(`✓ request dingin           ${String(r.ms).padStart(4)} ms  (upload=${st.uploads}, call=${st.calls})`);
 
     r = await call({ text: 'dua' });
@@ -69,18 +70,18 @@ gradio.listen(0, '127.0.0.1', async () => {
     console.log('✓ Space restart (path upload basi) → upload ulang otomatis, sukses');
 
     st.mode = 'slow'; r = await call({ text: 'lambat sekali', flash: '500' });
-    assert.strictEqual(r.headers['x-tts-engine'], 'youdao-flash'); assert.ok(r.ms < 1500, `flash terlalu lambat: ${r.ms}`); assert.match(r.headers['x-tts-note'], /kilat/);
+    assert.strictEqual(r.headers['x-tts-engine'], 'kev-tts-flash'); assert.ok(r.ms < 1500, `flash terlalu lambat: ${r.ms}`); assert.match(r.headers['x-tts-note'], /kilat/);
     console.log(`✓ clone lambat (4000 ms) → mode kilat menjawab ${r.ms} ms`);
     await new Promise((ok) => setTimeout(ok, 4300)); st.mode = 'ok';
-    r = await call({ text: 'lambat sekali', flash: '500' }); assert.strictEqual(r.headers['x-tts-engine'], 'voxcpm'); assert.ok(r.ms < 300);
+    r = await call({ text: 'lambat sekali', flash: '500' }); assert.strictEqual(r.headers['x-tts-engine'], 'kev-tts'); assert.ok(r.ms < 300);
     console.log(`✓ permintaan berikutnya → suara clone dari cache (${r.ms} ms)`);
 
     st.mode = 'down'; r = await call({ text: 'satu', nocache: '1' });
-    assert.strictEqual(r.code, 200); assert.strictEqual(r.headers['x-tts-cache'], 'stale'); assert.strictEqual(r.headers['x-tts-engine'], 'voxcpm');
+    assert.strictEqual(r.code, 200); assert.strictEqual(r.headers['x-tts-cache'], 'stale'); assert.strictEqual(r.headers['x-tts-engine'], 'kev-tts');
     console.log('✓ Space mati → hasil clone tersimpan disajikan (stale), bukan suara generik');
 
     r = await call({ text: 'belum pernah' });
-    assert.strictEqual(r.code, 200); assert.strictEqual(r.headers['x-tts-engine'], 'youdao-fallback'); assert.match(r.headers['x-tts-note'], /gagal/);
+    assert.strictEqual(r.code, 200); assert.strictEqual(r.headers['x-tts-engine'], 'kev-tts-fast'); assert.match(r.headers['x-tts-note'], /gagal/);
     console.log('✓ Space mati + tak ada cache → suara cadangan, diberi catatan jelas');
 
     st.mode = 'quota'; await call({ text: 'kuota satu' });
@@ -90,7 +91,7 @@ gradio.listen(0, '127.0.0.1', async () => {
     console.log(`✓ kena kuota → circuit breaker, request berikutnya langsung cadangan (${r.ms} ms)`);
 
     const y0 = youdaoHits; r = await call({ text: 'cepat', fast: '1' });
-    assert.strictEqual(r.headers['x-tts-engine'], 'youdao'); assert.strictEqual(youdaoHits, y0 + 1); assert.strictEqual(r.headers['x-tts-note'], undefined);
+    assert.strictEqual(r.headers['x-tts-engine'], 'kev-tts-fast'); assert.strictEqual(youdaoHits, y0 + 1); assert.strictEqual(r.headers['x-tts-note'], undefined);
     console.log(`✓ fast=1 → langsung suara biasa (${r.ms} ms)`);
 
     const h2 = st.hits; r = await call({}, 'HEAD'); assert.strictEqual(r.code, 200); assert.strictEqual(st.hits, h2);

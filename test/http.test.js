@@ -1,4 +1,5 @@
 'use strict';
+process.env.FIREBASE_DB_URL = 'off';
 // Simulasi routing Vercel (rewrites + public/) di atas handler asli, memakai mock Gradio dari mock.test.js.
 const http = require('http'), fs = require('fs'), path = require('path'), assert = require('assert');
 const vercel = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'vercel.json'), 'utf8'));

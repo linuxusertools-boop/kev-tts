@@ -1,7 +1,6 @@
 # kev-tts
 
-API teks → suara dengan voice clone, men-scrape Space Hugging Face
-[openbmb-voxcpm-demo](https://openbmb-voxcpm-demo.hf.space/). Siap deploy ke Vercel, tanpa dependency.
+kev-tts — API teks → suara multi-suara (voice clone dari `storage/*.mp3`), dikembangkan oleh kevsoft-studio. Siap deploy ke Vercel. Cache permanen di Firebase Realtime Database (terpisah per suara); lihat `database.rules.json`.
 
 ## Pakai
 
@@ -41,7 +40,7 @@ Berkas `.mp4` berisi video bisa gagal didekode oleh model.
 - Hasil dibaca dari stream SSE dan langsung dikirim begitu `complete` tiba, tanpa menunggu koneksi ditutup.
 - Cache hasil di memori (`X-TTS-Cache: memory`), penggabungan request identik, dan cache CDN 24 jam untuk GET.
 - `fast=1` untuk jawaban sekitar sedetik (suara biasa).
-- Fungsi dipasang di `iad1`, dekat server Hugging Face.
+- Fungsi dipasang di `sin1` (Singapura), sedekat mungkin dengan Realtime DB `asia-southeast1` dan pengguna.
 - **Pemanasan:** Vercel Hobby hanya mengizinkan cron harian, jadi pasang pinger gratis (cron-job.org / UptimeRobot) ke `/api/warm` tiap 5 menit agar fungsi dan Space tidak dingin.
 
 Batas jujur: generate suara clone di GPU Space tetap butuh beberapa detik untuk teks yang belum pernah diminta. Yang bisa dihilangkan adalah semua waktu tunggu di luar itu.

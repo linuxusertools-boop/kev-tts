@@ -70,13 +70,13 @@ storage/tsundere.mp3 → /tsundere</code></pre>
 <h2>Pemasangan</h2>
 <div class="card"><ol>
 <li>Upload proyek ke GitHub, lalu import di Vercel (Framework: <b>Other</b>, tanpa build command).</li>
-<li>Tidak ada environment variable yang wajib. Tidak memakai HF token.</li>
+<li>Cache memakai Firebase Realtime Database: tempel isi <code>database.rules.json</code> di tab Rules. Lebih aman lagi: isi env <code>FIREBASE_SERVICE_ACCOUNT</code> (JSON service account) lalu kunci Rules penuh. Tanpa HF token dan tanpa API key.</li>
 <li>Buka <code>/home</code> untuk mencoba, <code>/status</code> untuk memeriksa mesin.</li>
 <li>Agar respons pertama tetap cepat, pasang pinger gratis (cron-job.org / UptimeRobot) ke <code>/warm</code> tiap 5 menit.</li>
 </ol></div>
 
 <h2>Respons & header</h2>
-<p>Sukses: audio langsung. Header berguna: <code>X-TTS-Voice</code>, <code>X-TTS-Engine</code> (<code>voxcpm</code> atau cadangan), <code>X-TTS-Cache</code>, <code>X-TTS-Elapsed-Ms</code>. Teks yang sama dipakai ulang dari cache sehingga balasannya instan.</p>
+<p>Sukses: audio langsung. Header berguna: <code>X-TTS-Voice</code>, <code>X-TTS-Engine</code> (<code>kev-tts</code>, <code>kev-tts-flash</code> atau <code>kev-tts-fast</code>), <code>X-TTS-Cache</code> (<code>memory</code>, <code>db</code>, <code>miss</code>), <code>X-TTS-Elapsed-Ms</code>. Setiap hasil disimpan permanen di Firebase Realtime Database, terpisah per suara, sehingga teks yang sama langsung instan walau server baru menyala.</p>
 <p>Gagal: JSON <code>{status:false, code, message}</code>. Suara tak dikenal → 404 <code>VOICE_NOT_FOUND</code> beserta daftar suara yang ada.</p>
 
 <h2>Soal kecepatan & ketahanan</h2>

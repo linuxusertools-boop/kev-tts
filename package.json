@@ -2,8 +2,15 @@
   "name": "kev-tts",
   "version": "2.0.0",
   "private": true,
-  "description": "API endpoint TTS + voice clone dari VoxCPM (Hugging Face Space), siap deploy ke Vercel",
+  "description": "kev-tts \u2014 API teks ke suara multi-suara, dikembangkan oleh kevsoft-studio",
   "main": "api/tts.js",
-  "engines": { "node": ">=18" },
-  "scripts": { "test": "node test/mock.test.js && node test/http.test.js && node test/speed.test.js" }
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test/mock.test.js && node test/http.test.js && node test/speed.test.js && node test/rtdb.test.js"
+  },
+  "optionalDependencies": {
+    "@vercel/functions": "^1.0.0"
+  }
 }
