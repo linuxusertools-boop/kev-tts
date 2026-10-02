@@ -6,7 +6,7 @@ const wav = (() => { const sr = 16000, n = sr, b = Buffer.alloc(44 + n * 2); b.w
 const P = (component, label, d) => ({ label, parameter_name: label.toLowerCase(), component, parameter_has_default: true, parameter_default: d, type: {} });
 
 const st = { uploads: 0, calls: 0, validPaths: new Set(), mode: 'ok', hits: 0 };
-const gradio = http.createServer((req, res) => {
+const gradio = http.createServer(async (req, res) => {
   st.hits++;
   const u = new URL(req.url, 'http://x'); const j = (o, c = 200) => { res.writeHead(c, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
   if (u.pathname === '/config') return j({ version: '6.0.0', api_prefix: '/gradio_api', components: [], dependencies: [] });
@@ -22,6 +22,7 @@ const gradio = http.createServer((req, res) => {
     if (st.mode === 'down') return res.end('event: error\ndata: "boom"\n\n');
     if (st.mode === 'quota') return res.end('event: error\ndata: "You have exceeded your GPU quota"\n\n');
     if (!st.validPaths.has(st.lastData[1].path)) return res.end('event: error\ndata: "file not found"\n\n');
+    if (st.mode === 'slow') await new Promise((r) => setTimeout(r, 4000));
     res.write('event: complete\ndata: [{"path":"/tmp/o.wav"}]\n\n');
     if (st.mode === 'slowclose') return setTimeout(() => res.end(), 4000); // koneksi dibiarkan terbuka
     return res.end();
@@ -66,6 +67,13 @@ gradio.listen(0, '127.0.0.1', async () => {
     st.mode = 'ok'; st.validPaths.clear(); const up0 = st.uploads; r = await call({ text: 'restart' });
     assert.strictEqual(r.code, 200); assert.strictEqual(st.uploads, up0 + 1);
     console.log('✓ Space restart (path upload basi) → upload ulang otomatis, sukses');
+
+    st.mode = 'slow'; r = await call({ text: 'lambat sekali', flash: '500' });
+    assert.strictEqual(r.headers['x-tts-engine'], 'youdao-flash'); assert.ok(r.ms < 1500, `flash terlalu lambat: ${r.ms}`); assert.match(r.headers['x-tts-note'], /kilat/);
+    console.log(`✓ clone lambat (4000 ms) → mode kilat menjawab ${r.ms} ms`);
+    await new Promise((ok) => setTimeout(ok, 4300)); st.mode = 'ok';
+    r = await call({ text: 'lambat sekali', flash: '500' }); assert.strictEqual(r.headers['x-tts-engine'], 'voxcpm'); assert.ok(r.ms < 300);
+    console.log(`✓ permintaan berikutnya → suara clone dari cache (${r.ms} ms)`);
 
     st.mode = 'down'; r = await call({ text: 'satu', nocache: '1' });
     assert.strictEqual(r.code, 200); assert.strictEqual(r.headers['x-tts-cache'], 'stale'); assert.strictEqual(r.headers['x-tts-engine'], 'voxcpm');

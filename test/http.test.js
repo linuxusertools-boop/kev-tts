@@ -18,6 +18,8 @@ const gradio = http.createServer((req, res) => {
   res.writeHead(404); res.end('{}');
 });
 
+const KAWAI = path.join(__dirname, '..', 'storage', 'kawai.mp3'); fs.copyFileSync(path.join(__dirname, '..', 'storage', 'sample.mp3'), KAWAI);
+process.on('exit', () => { try { fs.unlinkSync(KAWAI); } catch {} });
 gradio.listen(0, '127.0.0.1', async () => {
   process.env.VOXCPM_SPACES = `http://127.0.0.1:${gradio.address().port}`;
   const routes = { '/api/tts': require('../api/tts'), '/api/animemoe': require('../api/animemoe'), '/api/status': require('../api/status'), '/api/voices': require('../api/voices') };

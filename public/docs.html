@@ -46,6 +46,8 @@ footer{margin-top:40px;text-align:center;color:var(--mut);font-size:13px}footer 
 <tr><td><code>text</code></td><td>Teks yang diucapkan (maks 300 karakter, bisa diubah lewat <code>MAX_CHARS</code>)</td></tr>
 <tr><td><code>voice</code></td><td>Nama suara (hanya di <code>/tts</code>); kosong = utama</td></tr>
 <tr><td><code>fast=1</code></td><td>Mode kilat: ~1 detik, suara biasa (bukan clone)</td></tr>
+<tr><td><code>mode=clone</code></td><td>Tunggu suara clone penuh (default: mode kilat, jawab ≤ ~1,5 detik)</td></tr>
+<tr><td><code>flash=ms</code></td><td>Batas tunggu clone sebelum suara cepat dikirim (default 1500)</td></tr>
 <tr><td><code>format=json</code></td><td>Balasan JSON berisi audio base64</td></tr>
 <tr><td><code>download=1</code></td><td>Paksa unduh file</td></tr>
 <tr><td><code>lang</code></td><td>Bahasa mode kilat/cadangan: <code>ja</code>, <code>en</code>, <code>ko</code>, <code>zh</code>, <code>fr</code></td></tr>
@@ -78,5 +80,5 @@ storage/tsundere.mp3 → /tsundere</code></pre>
 <p>Gagal: JSON <code>{status:false, code, message}</code>. Suara tak dikenal → 404 <code>VOICE_NOT_FOUND</code> beserta daftar suara yang ada.</p>
 
 <h2>Soal kecepatan & ketahanan</h2>
-<p>Suara clone dibuat di server model publik, jadi teks baru butuh beberapa detik; teks yang pernah diminta langsung instan dari cache. Untuk balasan sekitar satu detik gunakan <code>fast=1</code>. Bila model sibuk atau down, sistem otomatis mencoba ulang, memakai hasil tersimpan, atau suara cadangan, sehingga selalu ada jawaban.</p>
+<p><b>Mode kilat (default):</b> clone diberi waktu sekitar 1,5 detik. Bila belum siap, API langsung membalas dengan suara cepat (<code>X-TTS-Engine: youdao-flash</code>) sambil clone tetap dikerjakan; permintaan berikutnya dengan teks sama langsung memakai suara clone dari cache. Pakai <code>mode=clone</code> bila ingin selalu menunggu suara clone. <code>fast=1</code> selalu memakai suara cepat. Bila model sibuk atau down, sistem otomatis mencoba ulang, memakai hasil tersimpan, atau suara cadangan, sehingga selalu ada jawaban.</p>
 <footer>powered by <a href="https://github.com/kevsoft-studio" target="_blank" rel="noopener">kevsoft-studio</a></footer></div></body></html>
