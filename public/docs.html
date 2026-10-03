@@ -55,9 +55,9 @@ footer{margin-top:40px;text-align:center;color:var(--mut);font-size:13px}footer 
 </table></div>
 
 <h2>Contoh</h2>
-<pre><code>curl "https://DOMAIN-KAMU/animemoe?text=Konnichiwa" -o suara.mp3
-curl "https://DOMAIN-KAMU/kawai?text=Halo&amp;fast=1" -o kawai.mp3
-curl "https://DOMAIN-KAMU/voices"</code></pre>
+<pre><code>curl "https://kev-tts.vercel.app/animemoe?text=Konnichiwa" -o suara.mp3
+curl "https://kev-tts.vercel.app/kawai?text=Halo&amp;fast=1" -o kawai.mp3
+curl "https://kev-tts.vercel.app/voices"</code></pre>
 <pre><code>const r = await fetch('/animemoe?text=' + encodeURIComponent('Halo'));
 new Audio(URL.createObjectURL(await r.blob())).play();</code></pre>
 
@@ -67,13 +67,6 @@ new Audio(URL.createObjectURL(await r.blob())).play();</code></pre>
 storage/kawai.mp3   → /kawai
 storage/tsundere.mp3 → /tsundere</code></pre>
 
-<h2>Pemasangan</h2>
-<div class="card"><ol>
-<li>Upload proyek ke GitHub, lalu import di Vercel (Framework: <b>Other</b>, tanpa build command).</li>
-<li>Cache memakai Firebase Realtime Database: tempel isi <code>database.rules.json</code> di tab Rules. Lebih aman lagi: isi env <code>FIREBASE_SERVICE_ACCOUNT</code> (JSON service account) lalu kunci Rules penuh. Tanpa HF token dan tanpa API key.</li>
-<li>Buka <code>/home</code> untuk mencoba, <code>/status</code> untuk memeriksa mesin.</li>
-<li>Agar respons pertama tetap cepat, pasang pinger gratis (cron-job.org / UptimeRobot) ke <code>/warm</code> tiap 5 menit.</li>
-</ol></div>
 
 <h2>Respons & header</h2>
 <p>Sukses: audio langsung. Header berguna: <code>X-TTS-Voice</code>, <code>X-TTS-Engine</code> (<code>kev-tts</code>, <code>kev-tts-flash</code> atau <code>kev-tts-fast</code>), <code>X-TTS-Cache</code> (<code>memory</code>, <code>db</code>, <code>miss</code>), <code>X-TTS-Elapsed-Ms</code>. Setiap hasil disimpan permanen di Firebase Realtime Database, terpisah per suara, sehingga teks yang sama langsung instan walau server baru menyala.</p>
@@ -81,4 +74,4 @@ storage/tsundere.mp3 → /tsundere</code></pre>
 
 <h2>Soal kecepatan & ketahanan</h2>
 <p><b>Mode kilat (default):</b> clone diberi waktu sekitar 1,5 detik. Bila belum siap, API langsung membalas dengan suara cepat (<code>X-TTS-Engine: youdao-flash</code>) sambil clone tetap dikerjakan; permintaan berikutnya dengan teks sama langsung memakai suara clone dari cache. Pakai <code>mode=clone</code> bila ingin selalu menunggu suara clone. <code>fast=1</code> selalu memakai suara cepat. Bila model sibuk atau down, sistem otomatis mencoba ulang, memakai hasil tersimpan, atau suara cadangan, sehingga selalu ada jawaban.</p>
-<footer>powered by <a href="https://github.com/kevsoft-studio" target="_blank" rel="noopener">kevsoft-studio</a></footer></div></body></html>
+<footer>powered by <a href="https://github.com/kevsoftstudio" target="_blank" rel="noopener">kevsoft-studio</a></footer></div></body></html>
